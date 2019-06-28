@@ -1,11 +1,11 @@
 package httprequest
 
 import (
-	"strings"
+	// "strings"
 )
 
 func getRequestString(buffer []byte) (string) {
 	str := string(buffer)
-	str = strings.TrimRight(str, "\n")
+	// str = strings.TrimRight(str, "\n")
 	return str
 }

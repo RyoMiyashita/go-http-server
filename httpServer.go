@@ -6,9 +6,14 @@ import (
 	"net"
 	"os"
 	"./httprequest"
+	"./httpresponse"
+	"./getfile"
+	"./extension"
+	// "time"
 )
 
 const listen_host = "0.0.0.0:8080"
+const roorDir = "./public"
 
 func main() {
 	fmt.Printf("Open %s\n", listen_host)
@@ -40,10 +45,32 @@ func main() {
 				isHttp, request := httprequest.GetHTTPRequest(buffer[:n])
 				// fmt.Println(isHttp)
 				// fmt.Printf("%+v\n", request)
+				// os.Stdout.Write(buffer[:n])
 				if isHttp {
-					os.Stdout.Write(buffer[:n])
+					isKeepAlive := false
+					contentBytes, err := getfile.GetFileFromPath(roorDir, request.Path)
+					if err != nil {
+						break
+					}
+					fileName := extension.GetFileNameFromPath(request.Path)
+					contentType :=  extension.GetContentType(fileName)
+					var hedders []string
+					hedders = append(hedders, "Content-Type:" + contentType)
+					if request.Connection == "keep-alive" {
+						isKeepAlive = true
+						hedders = append(hedders, "Connection: keep-alive")
+					}
+					res, err := httpresponse.CreateHttpResponse(request.Protocol, 200, hedders, contentBytes)
+					if err != nil {
+						break
+					}
+					_, error = connection.Write(res)
 
-					_, error = connection.Write([]byte("ok"))
+					if !isKeepAlive {
+						connection.Close()
+						break
+					}
+
 				} else {
 					os.Stdout.Write([]byte("unknown"))
 					_, error = connection.Write([]byte("unknown"))

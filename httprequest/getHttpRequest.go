@@ -3,59 +3,75 @@ package httprequest
 import(
 	"strings"
 	"regexp"
-	// "fmt"
 )
 
 type Request struct {
-	method string
-	path string
-	protocol string
+	Method string
+	Path string
+	Protocol string
+	Connection string
 }
 
 func GetHTTPRequest(buffer []byte) (bool, *Request) {
 	requestString := getRequestString(buffer)
 	// fmt.Println(requestString)
-	splittedRequestString := strings.Split(requestString, " ")
-	// for _, str := range splittedRequestString {
-	// 	fmt.Printf("[%s]", str)
+	// os.Stdout.Write([]byte(requestString))
+	// os.Stdout.Write([]byte("\n\n"))
+	requests := strings.Split(requestString, "\r\n")
+	// for _, str := range requests {
+	// 	os.Stdout.Write([]byte("[" + str + "]"))
+	// 	// fmt.Printf("[%s]", str)
 	// }
+	splittedRequestString := strings.Split(requests[0], " ")
+	// for _, str := range splittedRequestString {
+	// 	os.Stdout.Write([]byte(str))
+	// }
+	var Connection string
 	if 3 != len(splittedRequestString) {
 		er := Request {
-			method: "no",
-			path: "no",
-			protocol: "no",
+			Method: "no",
+			Path: "no",
+			Protocol: "no",
 		}
 		return false, &er
 	}
 	if !isAllowMethod(splittedRequestString[0]) {
 		er := Request {
-			method: "unknown",
-			path: "no",
-			protocol: "no",
+			Method: "unknown",
+			Path: "no",
+			Protocol: "no",
 		}
 		return false, &er
 	}
 	if !isAllowPath(splittedRequestString[1]) {
 		er := Request {
-			method: "no",
-			path: "unknown",
-			protocol: "no",
+			Method: "no",
+			Path: "unknown",
+			Protocol: "no",
 		}
 		return false, &er
 	}
 	if !isAllowProtocol(splittedRequestString[2]) {
 		er := Request {
-			method: "no",
-			path: "no",
-			protocol: "unknown",
+			Method: "no",
+			Path: "no",
+			Protocol: "unknown",
 		}
 		return false, &er
 	}
 
+	for _, reqElment := range requests {
+		connectionReg, _ := regexp.Compile(`^Connection: keep-alive$`)
+		if (connectionReg.MatchString(string(reqElment))) {
+			Connection = "keep-alive"
+		}
+	}
+
 	request := Request{
-		method: splittedRequestString[0],
-		path: splittedRequestString[1],
-		protocol: splittedRequestString[2],
+		Method: splittedRequestString[0],
+		Path: splittedRequestString[1],
+		Protocol: splittedRequestString[2],
+		Connection: Connection,
 	}
 	return true, &request
 }
