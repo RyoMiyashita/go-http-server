@@ -5,9 +5,10 @@ import (
 	"io"
 	"net"
 	"os"
+	"./httprequest"
 )
 
-const listen_host = "0.0.0.0:12345"
+const listen_host = "0.0.0.0:8080"
 
 func main() {
 	fmt.Printf("Open %s\n", listen_host)
@@ -26,9 +27,9 @@ func main() {
 			panic(error)
 		}
 		defer connection.Close()
-		buffer := make([]byte, 1500)
 		go func() {
 			for {
+				buffer := make([]byte, 1500)
 				n, error := connection.Read(buffer)
 				if error != nil {
 					if error == io.EOF {
@@ -36,8 +37,18 @@ func main() {
 					}
 					panic(error)
 				}
-				os.Stdout.Write(buffer[:n]) // echo
-				_, error = connection.Write(buffer[:n])
+				isHttp, request := httprequest.GetHTTPRequest(buffer[:n])
+				// fmt.Println(isHttp)
+				// fmt.Printf("%+v\n", request)
+				if isHttp {
+					os.Stdout.Write(buffer[:n])
+
+					_, error = connection.Write([]byte("ok"))
+				} else {
+					os.Stdout.Write([]byte("unknown"))
+					_, error = connection.Write([]byte("unknown"))
+				}
+				_, error = connection.Write([]byte("\n"))
 				if error != nil {
 					break
 				}
